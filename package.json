@@ -8,7 +8,8 @@
     "start": "node server.js",
     "rebrand": "node rebrand.js",
     "export": "node export-static.js",
-    "export:gh-pages": "BASE_PATH=bookish-engine node export-static.js"
+    "export:gh-pages": "BASE_PATH=bookish-engine node export-static.js",
+    "deploy:gh-pages": "npm run export:gh-pages && npx gh-pages -d dist -b gh-pages --dotfiles"
   },
   "dependencies": {
     "puppeteer-core": "^24.3.1"
