@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>BookishEngine - Redirecting</title>
+    <script>
+      // Single Page App redirect for GitHub Pages
+      var pathSegmentsToKeep = 0;
+      var l = window.location;
+      var target = l.pathname.replace(/^\/+/, '');
+      if (target) {
+        var cleanTarget = target.replace(/\/$/, '') + '/index.html';
+        window.location.replace(l.protocol + '//' + l.host + '/' + cleanTarget + l.search + l.hash);
+      } else {
+        window.location.replace('/');
+      }
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to lesson...</p>
+  </body>
+</html>
