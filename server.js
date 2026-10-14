@@ -205,9 +205,20 @@ const server = http.createServer((req, res) => {
   `);
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const nextPort = Number(server.address()?.port || PORT) + 1;
+    console.warn(`[!] Port ${PORT} is busy, switching to http://localhost:${nextPort}...`);
+    server.listen(nextPort);
+  } else {
+    console.error('Server error:', err);
+  }
+});
+
 server.listen(PORT, () => {
+  const actualPort = server.address().port;
   console.log('=====================================================');
-  console.log(`🚀 BookishEngine Offline App running at: http://localhost:${PORT}`);
+  console.log(`🚀 BookishEngine Offline App running at: http://localhost:${actualPort}`);
   console.log('=====================================================');
   console.log('All DSA Visual, LLD, Networking & OS lessons are available 100% offline.');
   console.log('Press Ctrl + C to stop the server.');
