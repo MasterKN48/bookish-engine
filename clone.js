@@ -40,7 +40,7 @@ function routeToFilename(route) {
 async function main() {
   ensureDirs();
   console.log('=====================================================');
-  console.log('   ChaiCode DSA Offline Cloner                       ');
+  console.log('   BookishEngine DSA Offline Cloner                  ');
   console.log('=====================================================');
   console.log('Launching Chrome to authenticate session...');
 

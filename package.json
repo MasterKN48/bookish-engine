@@ -1,11 +1,14 @@
 {
-  "name": "dsa-cloner",
+  "name": "bookish-engine",
   "version": "1.0.0",
-  "description": "Offline cloner and viewer for ChaiCode DSA and course tracks",
+  "description": "Interactive offline visualizer and static exporter for BookishEngine DSA and engineering courses",
   "main": "server.js",
   "scripts": {
     "clone": "node clone.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "rebrand": "node rebrand.js",
+    "export": "node export-static.js",
+    "export:gh-pages": "BASE_PATH=bookish-engine node export-static.js"
   },
   "dependencies": {
     "puppeteer-core": "^24.3.1"

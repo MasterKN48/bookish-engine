@@ -207,7 +207,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log('=====================================================');
-  console.log(`🚀 ChaiCode Offline App running at: http://localhost:${PORT}`);
+  console.log(`🚀 BookishEngine Offline App running at: http://localhost:${PORT}`);
   console.log('=====================================================');
   console.log('All DSA Visual, LLD, Networking & OS lessons are available 100% offline.');
   console.log('Press Ctrl + C to stop the server.');
