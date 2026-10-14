@@ -1,5 +1,6 @@
 // Offline Service Worker for BookishEngine Static Mirror
 const CACHE_NAME = 'bookishengine-offline-v1';
+const PREFIX = '/bookish-engine';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -13,10 +14,13 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // 1. Intercept Next.js Image Optimization
-  if (url.pathname === '/_next/image') {
+  if (url.pathname.includes('/_next/image')) {
     const targetUrl = url.searchParams.get('url');
     if (targetUrl) {
-      const cleanImg = decodeURIComponent(targetUrl);
+      let cleanImg = decodeURIComponent(targetUrl);
+      if (PREFIX && !cleanImg.startsWith(PREFIX) && cleanImg.startsWith('/')) {
+        cleanImg = PREFIX + cleanImg;
+      }
       event.respondWith(
         fetch(cleanImg).catch(() => {
           return new Response(
@@ -30,7 +34,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 2. Intercept Auth & Analytics APIs
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.includes('/api/')) {
     if (url.pathname.includes('/auth/refresh') || url.pathname.includes('/auth/sessions')) {
       event.respondWith(
         new Response(
@@ -46,7 +50,6 @@ self.addEventListener('fetch', (event) => {
       return;
     }
 
-    // Default mock response for other /api/* (like error-report)
     event.respondWith(
       new Response(JSON.stringify({ success: true, offline: true }), {
         headers: { 'Content-Type': 'application/json' }

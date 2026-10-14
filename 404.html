@@ -4,15 +4,17 @@
     <meta charset="utf-8">
     <title>BookishEngine - Redirecting</title>
     <script>
-      // Single Page App redirect for GitHub Pages
-      var pathSegmentsToKeep = 0;
       var l = window.location;
-      var target = l.pathname.replace(/^\/+/, '');
-      if (target) {
-        var cleanTarget = target.replace(/\/$/, '') + '/index.html';
-        window.location.replace(l.protocol + '//' + l.host + '/' + cleanTarget + l.search + l.hash);
+      var path = l.pathname;
+      var prefix = '/bookish-engine';
+      if (prefix && path.startsWith(prefix)) {
+        path = path.slice(prefix.length);
+      }
+      path = path.replace(/^\/+/, '').replace(/\/$/, '');
+      if (path) {
+        window.location.replace(l.protocol + '//' + l.host + (prefix ? prefix + '/' : '/') + path + '/index.html' + l.search + l.hash);
       } else {
-        window.location.replace('/');
+        window.location.replace(prefix ? prefix + '/' : '/');
       }
     </script>
   </head>
