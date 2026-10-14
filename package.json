@@ -1,0 +1,13 @@
+{
+  "name": "dsa-cloner",
+  "version": "1.0.0",
+  "description": "Offline cloner and viewer for ChaiCode DSA and course tracks",
+  "main": "server.js",
+  "scripts": {
+    "clone": "node clone.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.3.1"
+  }
+}
