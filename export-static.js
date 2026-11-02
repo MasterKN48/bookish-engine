@@ -363,6 +363,55 @@ function main() {
             content = content.replaceAll("'/fonts/", `'${PATH_PREFIX}/fonts/`);
             modified = true;
           }
+
+          // Rewrite navigation routes in JS chunks so menus and links have /bookish-engine/
+          const routePrefixes = [
+            'lld', 'dsa', 'computer-network', 'operating-system', 'dbms',
+            'videos', 'sheets', 'aptitude', 'quiz', 'interview', 'ai-roadmap',
+            'roadmap', 'progress', 'account', 'login', 'signup', 'admin',
+            'two-pointers', 'arrays-hashing', 'backtracking', 'bfs',
+            'binary-search', 'bit-manipulation', 'dfs', 'dp', 'graphs',
+            'greedy', 'heap-priority-queue', 'intervals', 'linked-list',
+            'math-geometry', 'sliding-window', 'stack', 'trees', 'trie'
+          ];
+          for (const r of routePrefixes) {
+            if (content.includes(`href:"/${r}"`)) {
+              content = content.replaceAll(`href:"/${r}"`, `href:"${PATH_PREFIX}/${r}"`);
+              modified = true;
+            }
+            if (content.includes(`href: "/${r}"`)) {
+              content = content.replaceAll(`href: "/${r}"`, `href: "${PATH_PREFIX}/${r}"`);
+              modified = true;
+            }
+            if (content.includes(`href:"/${r}/"`)) {
+              content = content.replaceAll(`href:"/${r}/"`, `href:"${PATH_PREFIX}/${r}/"`);
+              modified = true;
+            }
+            if (content.includes(`href: "/${r}/"`)) {
+              content = content.replaceAll(`href: "/${r}/"`, `href: "${PATH_PREFIX}/${r}/"`);
+              modified = true;
+            }
+            if (content.includes(`"/${r}/"`)) {
+              content = content.replaceAll(`"/${r}/"`, `"${PATH_PREFIX}/${r}/"`);
+              modified = true;
+            }
+          }
+
+          if (content.includes('href:"/"')) {
+            content = content.replaceAll('href:"/"', `href:"${PATH_PREFIX}/"`);
+            modified = true;
+          }
+          if (content.includes('href: "/"')) {
+            content = content.replaceAll('href: "/"', `href: "${PATH_PREFIX}/"`);
+            modified = true;
+          }
+          if (content.includes('function l(e){if("/"===e)return;')) {
+            content = content.replaceAll(
+              'function l(e){if("/"===e)return;',
+              `function l(e){if(e.startsWith("${PATH_PREFIX}"))e=e.slice("${PATH_PREFIX}".length)||"";if("/"===e||""===e)return;`
+            );
+            modified = true;
+          }
         }
 
         if (modified) {
@@ -478,6 +527,47 @@ function main() {
   };
 
   if (prefix) {
+    // 1. Intercept History API (pushState & replaceState)
+    var origPushState = history.pushState;
+    history.pushState = function(state, title, url) {
+      if (typeof url === 'string' && prefix && url.startsWith('/') && !url.startsWith(prefix + '/') && !url.startsWith('//')) {
+        url = prefix + (url === '/' ? '' : url);
+      }
+      return origPushState.call(this, state, title, url);
+    };
+
+    var origReplaceState = history.replaceState;
+    history.replaceState = function(state, title, url) {
+      if (typeof url === 'string' && prefix && url.startsWith('/') && !url.startsWith(prefix + '/') && !url.startsWith('//')) {
+        url = prefix + (url === '/' ? '' : url);
+      }
+      return origReplaceState.call(this, state, title, url);
+    };
+
+    // 2. Intercept Element.prototype.setAttribute for href & src
+    try {
+      var origSetAttr = Element.prototype.setAttribute;
+      Element.prototype.setAttribute = function(name, val) {
+        if (prefix && (name === 'href' || name === 'src') && typeof val === 'string' && val.startsWith('/') && !val.startsWith(prefix + '/') && !val.startsWith('//')) {
+          val = prefix + (val === '/' ? '' : val);
+        }
+        return origSetAttr.call(this, name, val);
+      };
+    } catch(e) {}
+
+    // 3. Intercept Anchor click events in capturing phase
+    document.addEventListener('click', function(e) {
+      var a = e.target && e.target.closest('a');
+      if (a && prefix) {
+        var rawHref = a.getAttribute('href');
+        if (rawHref && rawHref.startsWith('/') && !rawHref.startsWith(prefix + '/') && !rawHref.startsWith('//')) {
+          var newHref = prefix + (rawHref === '/' ? '' : rawHref);
+          a.setAttribute('href', newHref);
+        }
+      }
+    }, true);
+
+    // 4. Intercept Image src
     try {
       var origImageSrcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
       if (origImageSrcDesc && origImageSrcDesc.set) {
