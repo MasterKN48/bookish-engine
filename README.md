@@ -6,8 +6,6 @@ Run the complete **BookishEngine DSA Visual**, **LLD Visual**, **Networking**, a
 
 ## ✈️ How to Use on your system
 
-Whenever you are offline (no Wi-Fi needed):
-
 ```bash
 npm i
 npm start
