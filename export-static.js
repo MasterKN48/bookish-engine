@@ -148,6 +148,18 @@ function main() {
       path.join(SITE_DIR, 'chai-mascot-dark.png'),
       path.join(DIST_DIR, 'chai-mascot-dark.png')
     );
+    fs.copyFileSync(
+      path.join(SITE_DIR, 'chai-mascot-dark.png'),
+      path.join(DIST_DIR, 'icon.png')
+    );
+    fs.copyFileSync(
+      path.join(SITE_DIR, 'chai-mascot-dark.png'),
+      path.join(DIST_DIR, 'apple-icon.png')
+    );
+    fs.copyFileSync(
+      path.join(SITE_DIR, 'chai-mascot-dark.png'),
+      path.join(DIST_DIR, 'favicon.ico')
+    );
   }
 
   // 3b. Patch Webpack public path if subpath is used (e.g. /bookish-engine)
@@ -157,6 +169,68 @@ function main() {
     wpContent = wpContent.replaceAll('d.p="/_next/"', `d.p="${PATH_PREFIX}/_next/"`);
     fs.writeFileSync(webpackChunk, wpContent);
     console.log(`[✓] Patched Webpack chunk publicPath: d.p="${PATH_PREFIX}/_next/"`);
+  }
+
+  // 3c. Patch fonts.css so that @font-face URLs resolve properly on GitHub Pages
+  const fontsCssPath = path.join(DIST_DIR, 'fonts', 'fonts.css');
+  if (fs.existsSync(fontsCssPath)) {
+    let fontsCss = fs.readFileSync(fontsCssPath, 'utf8');
+    if (PATH_PREFIX) {
+      fontsCss = fontsCss.replaceAll('url(/fonts/', `url(${PATH_PREFIX}/fonts/`);
+    } else {
+      fontsCss = fontsCss.replaceAll('url(/fonts/', 'url(./');
+    }
+    fs.writeFileSync(fontsCssPath, fontsCss);
+    console.log(`[✓] Patched fonts.css URLs with ${PATH_PREFIX ? PATH_PREFIX + '/fonts/' : './'}`);
+  }
+
+  // 3d. Patch static JS chunks and CSS files for subpath assets
+  if (PATH_PREFIX) {
+    console.log('Patching static JS chunks and assets with path prefix...');
+    function patchStaticFiles(dir) {
+      if (!fs.existsSync(dir)) return;
+      const list = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of list) {
+        const full = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          patchStaticFiles(full);
+        } else if (item.name.endsWith('.js') || item.name.endsWith('.css')) {
+          let content = fs.readFileSync(full, 'utf8');
+          let modified = false;
+
+          if (content.includes('"/brand/')) {
+            content = content.replaceAll('"/brand/', `"${PATH_PREFIX}/brand/`);
+            modified = true;
+          }
+          if (content.includes("'/brand/")) {
+            content = content.replaceAll("'/brand/", `'${PATH_PREFIX}/brand/`);
+            modified = true;
+          }
+          if (content.includes('"/chai-mascot-dark.png"')) {
+            content = content.replaceAll('"/chai-mascot-dark.png"', `"${PATH_PREFIX}/chai-mascot-dark.png"`);
+            modified = true;
+          }
+          if (content.includes("'/chai-mascot-dark.png'")) {
+            content = content.replaceAll("'/chai-mascot-dark.png'", `'${PATH_PREFIX}/chai-mascot-dark.png'`);
+            modified = true;
+          }
+          if (content.includes('"/fonts/')) {
+            content = content.replaceAll('"/fonts/', `"${PATH_PREFIX}/fonts/`);
+            modified = true;
+          }
+          if (content.includes("'/fonts/")) {
+            content = content.replaceAll("'/fonts/", `'${PATH_PREFIX}/fonts/`);
+            modified = true;
+          }
+
+          if (modified) {
+            fs.writeFileSync(full, content);
+          }
+        }
+      }
+    }
+    patchStaticFiles(path.join(DIST_DIR, '_next'));
+    console.log('[✓] Patched static JS chunks with PATH_PREFIX');
   }
 
   // 4. Create Service Worker and SPA 404 handler
@@ -217,6 +291,25 @@ function main() {
     }
     return origFetch.call(this, url, opts);
   };
+
+  if (prefix) {
+    try {
+      var origImageSrcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      if (origImageSrcDesc && origImageSrcDesc.set) {
+        Object.defineProperty(HTMLImageElement.prototype, 'src', {
+          set: function(val) {
+            if (typeof val === 'string' && val.startsWith('/') && !val.startsWith(prefix + '/') && !val.startsWith('//')) {
+              val = prefix + val;
+            }
+            return origImageSrcDesc.set.call(this, val);
+          },
+          get: origImageSrcDesc.get,
+          configurable: true,
+          enumerable: true
+        });
+      }
+    } catch(e) {}
+  }
 })();
 </script>`;
 
@@ -233,12 +326,16 @@ function main() {
       html = html
         .replaceAll('"/_next/', `"${PATH_PREFIX}/_next/`)
         .replaceAll("'/_next/", `'${PATH_PREFIX}/_next/`)
+        .replaceAll(', /_next/', `, ${PATH_PREFIX}/_next/`)
         .replaceAll('"/fonts/', `"${PATH_PREFIX}/fonts/`)
         .replaceAll("'/fonts/", `'${PATH_PREFIX}/fonts/`)
         .replaceAll('"/chai-mascot-dark.png', `"${PATH_PREFIX}/chai-mascot-dark.png`)
         .replaceAll("'/chai-mascot-dark.png", `'${PATH_PREFIX}/chai-mascot-dark.png`)
         .replaceAll('"/brand/', `"${PATH_PREFIX}/brand/`)
-        .replaceAll("'/brand/", `'${PATH_PREFIX}/brand/`);
+        .replaceAll("'/brand/", `'${PATH_PREFIX}/brand/`)
+        .replaceAll('"/icon.png', `"${PATH_PREFIX}/icon.png`)
+        .replaceAll('"/apple-icon.png', `"${PATH_PREFIX}/apple-icon.png`)
+        .replaceAll('"/favicon.ico', `"${PATH_PREFIX}/favicon.ico`);
 
       // 2. Links (e.g. href="/two-pointers/..." -> href="/bookish-engine/two-pointers/...")
       html = html.replace(/href="(\/[a-zA-Z0-9\-\_\/]*)"/g, (match, p1) => {
