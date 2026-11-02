@@ -1,33 +1,33 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const url = require("url");
 
 const PORT = process.env.PORT || 3000;
-const SITE_DIR = path.join(__dirname, 'offline_site');
+const SITE_DIR = path.join(__dirname, "offline_site");
 
 const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.mjs': 'application/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.rsc': 'text/x-component; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.webp': 'image/webp',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
-  '.ttf': 'font/ttf',
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".mjs": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".rsc": "text/x-component; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".webp": "image/webp",
+  ".woff2": "font/woff2",
+  ".woff": "font/woff",
+  ".ttf": "font/ttf",
 };
 
 function routeToFilename(route) {
-  const clean = route.replace(/^\/+|\/+$/g, '').replace(/[\/\?#]/g, '__');
-  return clean || 'index';
+  const clean = route.replace(/^\/+|\/+$/g, "").replace(/[\/\?#]/g, "__");
+  return clean || "index";
 }
 
 function tryFindFile(relPath) {
@@ -45,22 +45,24 @@ function tryFindFile(relPath) {
 
 const server = http.createServer((req, res) => {
   const parsed = url.parse(req.url, true);
-  const rawPathname = parsed.pathname || '/';
+  const rawPathname = parsed.pathname || "/";
 
   // Root pathname normalized
-  const isRoot = rawPathname === '/' || rawPathname === '';
+  const isRoot = rawPathname === "/" || rawPathname === "";
 
   // Next.js Image Optimization Proxy Mock
-  if (rawPathname === '/_next/image') {
+  if (rawPathname === "/_next/image") {
     const targetUrl = parsed.query.url;
     if (targetUrl) {
-      const cleanImgPath = decodeURIComponent(targetUrl).replace(/^\//, '');
-      const foundImg = tryFindFile(cleanImgPath) || tryFindFile(path.join('public', cleanImgPath));
+      const cleanImgPath = decodeURIComponent(targetUrl).replace(/^\//, "");
+      const foundImg =
+        tryFindFile(cleanImgPath) ||
+        tryFindFile(path.join("public", cleanImgPath));
       if (foundImg) {
         const ext = path.extname(foundImg);
         res.writeHead(200, {
-          'Content-Type': MIME_TYPES[ext] || 'image/png',
-          'Cache-Control': 'public, max-age=31536000, immutable',
+          "Content-Type": MIME_TYPES[ext] || "image/png",
+          "Cache-Control": "public, max-age=31536000, immutable",
         });
         fs.createReadStream(foundImg).pipe(res);
         return;
@@ -68,43 +70,46 @@ const server = http.createServer((req, res) => {
     }
     // Return empty 1x1 transparent png if image not found
     const transparentPng = Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-      'base64'
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+      "base64",
     );
-    res.writeHead(200, { 'Content-Type': 'image/png' });
+    res.writeHead(200, { "Content-Type": "image/png" });
     res.end(transparentPng);
     return;
   }
 
   // Mock API routes (Offline Auth & telemetry)
-  if (rawPathname.startsWith('/api/')) {
+  if (rawPathname.startsWith("/api/")) {
     res.writeHead(200, {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': '*',
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "*",
     });
 
-    if (rawPathname === '/api/auth/refresh' || rawPathname.startsWith('/api/auth/sessions')) {
+    if (
+      rawPathname === "/api/auth/refresh" ||
+      rawPathname.startsWith("/api/auth/sessions")
+    ) {
       res.end(
         JSON.stringify({
           status: 200,
           authenticated: true,
-          user: { id: 'usr_huntlax', name: 'Huntlax', username: 'Huntlax' },
-          session: { id: 'sess_offline', active: true },
-        })
+          user: { id: "usr_johndoe", name: "johndoe", username: "johndoe" },
+          session: { id: "sess_offline", active: true },
+        }),
       );
       return;
     }
 
-    if (rawPathname === '/api/auth/profiles/current') {
+    if (rawPathname === "/api/auth/profiles/current") {
       res.end(
         JSON.stringify({
-          id: 'usr_huntlax',
-          name: 'Huntlax',
-          username: 'Huntlax',
+          id: "usr_johndoe",
+          name: "johndoe",
+          username: "johndoe",
           streak: 1,
-        })
+        }),
       );
       return;
     }
@@ -115,15 +120,15 @@ const server = http.createServer((req, res) => {
   }
 
   // Next.js RSC requests (React Server Components flight streams)
-  const isRsc = req.headers['rsc'] === '1' || parsed.query._rsc;
+  const isRsc = req.headers["rsc"] === "1" || parsed.query._rsc;
   if (isRsc) {
     const fileKey = routeToFilename(rawPathname);
-    const rscFile = path.join(SITE_DIR, 'rsc', `${fileKey}.rsc`);
+    const rscFile = path.join(SITE_DIR, "rsc", `${fileKey}.rsc`);
     if (fs.existsSync(rscFile)) {
       res.writeHead(200, {
-        'Content-Type': 'text/x-component; charset=utf-8',
-        'Vary': 'RSC, Next-Router-State-Tree, Next-Router-Prefetch',
-        'Cache-Control': 'no-cache',
+        "Content-Type": "text/x-component; charset=utf-8",
+        Vary: "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+        "Cache-Control": "no-cache",
       });
       fs.createReadStream(rscFile).pipe(res);
       return;
@@ -131,13 +136,13 @@ const server = http.createServer((req, res) => {
   }
 
   // Handle local fonts
-  if (rawPathname.startsWith('/fonts/')) {
+  if (rawPathname.startsWith("/fonts/")) {
     const fontFile = path.join(SITE_DIR, rawPathname);
     if (fs.existsSync(fontFile)) {
       const ext = path.extname(fontFile);
       res.writeHead(200, {
-        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=31536000',
+        "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000",
       });
       fs.createReadStream(fontFile).pipe(res);
       return;
@@ -145,13 +150,13 @@ const server = http.createServer((req, res) => {
   }
 
   // Handle static assets (_next/static/...)
-  const relAsset = rawPathname.replace(/^\//, '');
+  const relAsset = rawPathname.replace(/^\//, "");
   const assetFile = tryFindFile(relAsset);
   if (assetFile) {
     const ext = path.extname(assetFile);
     res.writeHead(200, {
-      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+      "Cache-Control": "public, max-age=31536000, immutable",
     });
     fs.createReadStream(assetFile).pipe(res);
     return;
@@ -159,30 +164,30 @@ const server = http.createServer((req, res) => {
 
   // Handle Page Routes (HTML)
   const fileKey = routeToFilename(rawPathname);
-  const htmlFile = path.join(SITE_DIR, 'html', `${fileKey}.html`);
+  const htmlFile = path.join(SITE_DIR, "html", `${fileKey}.html`);
   if (fs.existsSync(htmlFile)) {
-    let htmlContent = fs.readFileSync(htmlFile, 'utf8');
+    let htmlContent = fs.readFileSync(htmlFile, "utf8");
 
     // Inject offline font stylesheet if available
-    if (fs.existsSync(path.join(SITE_DIR, 'fonts', 'fonts.css'))) {
-      if (!htmlContent.includes('/fonts/fonts.css')) {
+    if (fs.existsSync(path.join(SITE_DIR, "fonts", "fonts.css"))) {
+      if (!htmlContent.includes("/fonts/fonts.css")) {
         htmlContent = htmlContent.replace(
-          '</head>',
-          '<link rel="stylesheet" href="/fonts/fonts.css">\n</head>'
+          "</head>",
+          '<link rel="stylesheet" href="/fonts/fonts.css">\n</head>',
         );
       }
     }
 
     res.writeHead(200, {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-cache',
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-cache",
     });
     res.end(htmlContent);
     return;
   }
 
   // Fallback 404
-  res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
   res.end(`
     <!DOCTYPE html>
     <html>
@@ -205,21 +210,27 @@ const server = http.createServer((req, res) => {
   `);
 });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
     const nextPort = Number(server.address()?.port || PORT) + 1;
-    console.warn(`[!] Port ${PORT} is busy, switching to http://localhost:${nextPort}...`);
+    console.warn(
+      `[!] Port ${PORT} is busy, switching to http://localhost:${nextPort}...`,
+    );
     server.listen(nextPort);
   } else {
-    console.error('Server error:', err);
+    console.error("Server error:", err);
   }
 });
 
 server.listen(PORT, () => {
   const actualPort = server.address().port;
-  console.log('=====================================================');
-  console.log(`🚀 BookishEngine Offline App running at: http://localhost:${actualPort}`);
-  console.log('=====================================================');
-  console.log('All DSA Visual, LLD, Networking & OS lessons are available 100% offline.');
-  console.log('Press Ctrl + C to stop the server.');
+  console.log("=====================================================");
+  console.log(
+    `🚀 BookishEngine Offline App running at: http://localhost:${actualPort}`,
+  );
+  console.log("=====================================================");
+  console.log(
+    "All DSA Visual, LLD, Networking & OS lessons are available 100% offline.",
+  );
+  console.log("Press Ctrl + C to stop the server.");
 });

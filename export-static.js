@@ -1,11 +1,11 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const SITE_DIR = path.join(__dirname, 'offline_site');
-const DIST_DIR = path.join(__dirname, 'dist');
+const SITE_DIR = path.join(__dirname, "offline_site");
+const DIST_DIR = path.join(__dirname, "dist");
 
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/^\/+|\/+$/g, '');
-const PATH_PREFIX = BASE_PATH ? `/${BASE_PATH}` : '';
+const BASE_PATH = (process.env.BASE_PATH || "").replace(/^\/+|\/+$/g, "");
+const PATH_PREFIX = BASE_PATH ? `/${BASE_PATH}` : "";
 
 function copyDirRecursive(src, dest) {
   if (!fs.existsSync(src)) return;
@@ -24,8 +24,8 @@ function copyDirRecursive(src, dest) {
 }
 
 function routeToFilename(route) {
-  const clean = route.replace(/^\/+|\/+$/g, '').replace(/[\/\?#]/g, '__');
-  return clean || 'index';
+  const clean = route.replace(/^\/+|\/+$/g, "").replace(/[\/\?#]/g, "__");
+  return clean || "index";
 }
 
 function createServiceWorker() {
@@ -65,18 +65,79 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 2. Intercept Auth & Analytics APIs
-  if (url.pathname.includes('/api/')) {
+  if (url.pathname.includes('/api/') || url.hostname.includes('insforge.app')) {
     if (url.pathname.includes('/auth/refresh') || url.pathname.includes('/auth/sessions')) {
       event.respondWith(
         new Response(
           JSON.stringify({
             status: 200,
             authenticated: true,
-            user: { id: 'usr_huntlax', name: 'Huntlax', username: 'Huntlax' },
+            user: { id: 'usr_johndoe', name: 'johndoe', username: 'johndoe' },
             session: { id: 'sess_offline', active: true }
           }),
           { headers: { 'Content-Type': 'application/json' } }
         )
+      );
+      return;
+    }
+
+    if (url.pathname.includes('problem_solves') || url.pathname.includes('prep_active_days')) {
+      event.respondWith(
+        new Response(JSON.stringify([]), {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
+      return;
+    }
+
+    if (url.pathname.includes('profiles')) {
+      event.respondWith(
+        new Response(
+          JSON.stringify([{
+            id: 'usr_johndoe',
+            user_id: 'usr_johndoe',
+            name: 'johndoe',
+            username: 'johndoe',
+            role: 'admin',
+            plan: 'paid'
+          }]),
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+      return;
+    }
+
+    if (url.pathname.includes('activity_pulse')) {
+      event.respondWith(
+        new Response(
+          JSON.stringify({
+            problems_solved: 0,
+            answers_graded: 0,
+            tasks_done: 0,
+            learners_joined: 0,
+            plans_created: 0,
+            backlogs_cleared: 0
+          }),
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+      return;
+    }
+
+    if (url.pathname.includes('learning_window')) {
+      event.respondWith(
+        new Response(JSON.stringify({ active: false }), {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
+      return;
+    }
+
+    if (url.pathname.includes('my_college_state')) {
+      event.respondWith(
+        new Response(JSON.stringify(null), {
+          headers: { 'Content-Type': 'application/json' }
+        })
       );
       return;
     }
@@ -90,7 +151,7 @@ self.addEventListener('fetch', (event) => {
   }
 });
 `;
-  fs.writeFileSync(path.join(DIST_DIR, 'sw.js'), swCode);
+  fs.writeFileSync(path.join(DIST_DIR, "sw.js"), swCode);
 }
 
 function createGitHubPagesSPA404() {
@@ -118,13 +179,13 @@ function createGitHubPagesSPA404() {
     <p>Redirecting to lesson...</p>
   </body>
 </html>`;
-  fs.writeFileSync(path.join(DIST_DIR, '404.html'), spa404);
+  fs.writeFileSync(path.join(DIST_DIR, "404.html"), spa404);
 }
 
 function main() {
-  console.log('=====================================================');
-  console.log(`   Exporting for GitHub Pages (Base: ${PATH_PREFIX || '/'})`);
-  console.log('=====================================================');
+  console.log("=====================================================");
+  console.log(`   Exporting for GitHub Pages (Base: ${PATH_PREFIX || "/"})`);
+  console.log("=====================================================");
 
   // 1. Clean and prepare dist
   if (fs.existsSync(DIST_DIR)) {
@@ -133,71 +194,145 @@ function main() {
   fs.mkdirSync(DIST_DIR, { recursive: true });
 
   // 2. Critical for GitHub Pages: .nojekyll
-  fs.writeFileSync(path.join(DIST_DIR, '.nojekyll'), '');
-  console.log('[✓] Created .nojekyll (enables _next/ assets on GitHub Pages)');
+  fs.writeFileSync(path.join(DIST_DIR, ".nojekyll"), "");
+  console.log("[✓] Created .nojekyll (enables _next/ assets on GitHub Pages)");
 
   // 3. Copy static asset directories
-  console.log('Copying static assets (_next, fonts, images)...');
-  copyDirRecursive(path.join(SITE_DIR, '_next'), path.join(DIST_DIR, '_next'));
-  copyDirRecursive(path.join(SITE_DIR, 'fonts'), path.join(DIST_DIR, 'fonts'));
-  if (fs.existsSync(path.join(SITE_DIR, 'brand'))) {
-    copyDirRecursive(path.join(SITE_DIR, 'brand'), path.join(DIST_DIR, 'brand'));
+  console.log("Copying static assets (_next, fonts, images)...");
+  copyDirRecursive(path.join(SITE_DIR, "_next"), path.join(DIST_DIR, "_next"));
+  copyDirRecursive(path.join(SITE_DIR, "fonts"), path.join(DIST_DIR, "fonts"));
+  if (fs.existsSync(path.join(SITE_DIR, "brand"))) {
+    copyDirRecursive(
+      path.join(SITE_DIR, "brand"),
+      path.join(DIST_DIR, "brand"),
+    );
   }
-  if (fs.existsSync(path.join(SITE_DIR, 'chai-mascot-dark.png'))) {
+  if (fs.existsSync(path.join(SITE_DIR, "chai-mascot-dark.png"))) {
     fs.copyFileSync(
-      path.join(SITE_DIR, 'chai-mascot-dark.png'),
-      path.join(DIST_DIR, 'chai-mascot-dark.png')
+      path.join(SITE_DIR, "chai-mascot-dark.png"),
+      path.join(DIST_DIR, "chai-mascot-dark.png"),
     );
     fs.copyFileSync(
-      path.join(SITE_DIR, 'chai-mascot-dark.png'),
-      path.join(DIST_DIR, 'icon.png')
+      path.join(SITE_DIR, "chai-mascot-dark.png"),
+      path.join(DIST_DIR, "icon.png"),
     );
     fs.copyFileSync(
-      path.join(SITE_DIR, 'chai-mascot-dark.png'),
-      path.join(DIST_DIR, 'apple-icon.png')
+      path.join(SITE_DIR, "chai-mascot-dark.png"),
+      path.join(DIST_DIR, "apple-icon.png"),
     );
     fs.copyFileSync(
-      path.join(SITE_DIR, 'chai-mascot-dark.png'),
-      path.join(DIST_DIR, 'favicon.ico')
+      path.join(SITE_DIR, "chai-mascot-dark.png"),
+      path.join(DIST_DIR, "favicon.ico"),
     );
   }
 
   // 3b. Patch Webpack public path if subpath is used (e.g. /bookish-engine)
-  const webpackChunk = path.join(DIST_DIR, '_next', 'static', 'chunks', 'webpack-9433509379dd0fd2.js');
+  const webpackChunk = path.join(
+    DIST_DIR,
+    "_next",
+    "static",
+    "chunks",
+    "webpack-9433509379dd0fd2.js",
+  );
   if (fs.existsSync(webpackChunk) && PATH_PREFIX) {
-    let wpContent = fs.readFileSync(webpackChunk, 'utf8');
-    wpContent = wpContent.replaceAll('d.p="/_next/"', `d.p="${PATH_PREFIX}/_next/"`);
+    let wpContent = fs.readFileSync(webpackChunk, "utf8");
+    wpContent = wpContent.replaceAll(
+      'd.p="/_next/"',
+      `d.p="${PATH_PREFIX}/_next/"`,
+    );
     fs.writeFileSync(webpackChunk, wpContent);
-    console.log(`[✓] Patched Webpack chunk publicPath: d.p="${PATH_PREFIX}/_next/"`);
+    console.log(
+      `[✓] Patched Webpack chunk publicPath: d.p="${PATH_PREFIX}/_next/"`,
+    );
   }
 
   // 3c. Patch fonts.css so that @font-face URLs resolve properly on GitHub Pages
-  const fontsCssPath = path.join(DIST_DIR, 'fonts', 'fonts.css');
+  const fontsCssPath = path.join(DIST_DIR, "fonts", "fonts.css");
   if (fs.existsSync(fontsCssPath)) {
-    let fontsCss = fs.readFileSync(fontsCssPath, 'utf8');
+    let fontsCss = fs.readFileSync(fontsCssPath, "utf8");
     if (PATH_PREFIX) {
-      fontsCss = fontsCss.replaceAll('url(/fonts/', `url(${PATH_PREFIX}/fonts/`);
+      fontsCss = fontsCss.replaceAll(
+        "url(/fonts/",
+        `url(${PATH_PREFIX}/fonts/`,
+      );
     } else {
-      fontsCss = fontsCss.replaceAll('url(/fonts/', 'url(./');
+      fontsCss = fontsCss.replaceAll("url(/fonts/", "url(./");
     }
     fs.writeFileSync(fontsCssPath, fontsCss);
-    console.log(`[✓] Patched fonts.css URLs with ${PATH_PREFIX ? PATH_PREFIX + '/fonts/' : './'}`);
+    console.log(
+      `[✓] Patched fonts.css URLs with ${PATH_PREFIX ? PATH_PREFIX + "/fonts/" : "./"}`,
+    );
   }
 
-  // 3d. Patch static JS chunks and CSS files for subpath assets
-  if (PATH_PREFIX) {
-    console.log('Patching static JS chunks and assets with path prefix...');
-    function patchStaticFiles(dir) {
-      if (!fs.existsSync(dir)) return;
-      const list = fs.readdirSync(dir, { withFileTypes: true });
-      for (const item of list) {
-        const full = path.join(dir, item.name);
-        if (item.isDirectory()) {
-          patchStaticFiles(full);
-        } else if (item.name.endsWith('.js') || item.name.endsWith('.css')) {
-          let content = fs.readFileSync(full, 'utf8');
-          let modified = false;
+  // 3d. Patch static JS chunks and CSS files
+  console.log("Patching static JS chunks (hardening array state & paths)...");
+  function patchStaticFiles(dir) {
+    if (!fs.existsSync(dir)) return;
+    const list = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of list) {
+      const full = path.join(dir, item.name);
+      if (item.isDirectory()) {
+        patchStaticFiles(full);
+      } else if (item.name.endsWith(".js") || item.name.endsWith(".css")) {
+        let content = fs.readFileSync(full, "utf8");
+        let modified = false;
 
+        // 1. Guard against non-array problem_solves state crashes (TypeError: g.map is not a function)
+        if (content.includes("h(null!=t?t:[])")) {
+          content = content.replaceAll(
+            "h(null!=t?t:[])",
+            "h(Array.isArray(t)?t:[])",
+          );
+          modified = true;
+        }
+        if (content.includes("p(null!=t?t:[])")) {
+          content = content.replaceAll(
+            "p(null!=t?t:[])",
+            "p(Array.isArray(t)?t:[])",
+          );
+          modified = true;
+        }
+        if (content.includes("f(null!=t?t:[])")) {
+          content = content.replaceAll(
+            "f(null!=t?t:[])",
+            "f(Array.isArray(t)?t:[])",
+          );
+          modified = true;
+        }
+
+        const guardedSetMap = content.replace(
+          /new Set\(([a-zA-Z0-9_\$]+)\.map\(/g,
+          "new Set((Array.isArray($1)?$1:[]).map(",
+        );
+        if (guardedSetMap !== content) {
+          content = guardedSetMap;
+          modified = true;
+        }
+
+        if (content.includes("g.some(")) {
+          content = content.replaceAll(
+            "g.some(",
+            "(Array.isArray(g)?g:[]).some(",
+          );
+          modified = true;
+        }
+        if (content.includes("f.some(")) {
+          content = content.replaceAll(
+            "f.some(",
+            "(Array.isArray(f)?f:[]).some(",
+          );
+          modified = true;
+        }
+        if (content.includes("p.some(")) {
+          content = content.replaceAll(
+            "p.some(",
+            "(Array.isArray(p)?p:[]).some(",
+          );
+          modified = true;
+        }
+
+        // 2. Subpath rewrites for assets
+        if (PATH_PREFIX) {
           if (content.includes('"/brand/')) {
             content = content.replaceAll('"/brand/', `"${PATH_PREFIX}/brand/`);
             modified = true;
@@ -207,11 +342,17 @@ function main() {
             modified = true;
           }
           if (content.includes('"/chai-mascot-dark.png"')) {
-            content = content.replaceAll('"/chai-mascot-dark.png"', `"${PATH_PREFIX}/chai-mascot-dark.png"`);
+            content = content.replaceAll(
+              '"/chai-mascot-dark.png"',
+              `"${PATH_PREFIX}/chai-mascot-dark.png"`,
+            );
             modified = true;
           }
           if (content.includes("'/chai-mascot-dark.png'")) {
-            content = content.replaceAll("'/chai-mascot-dark.png'", `'${PATH_PREFIX}/chai-mascot-dark.png'`);
+            content = content.replaceAll(
+              "'/chai-mascot-dark.png'",
+              `'${PATH_PREFIX}/chai-mascot-dark.png'`,
+            );
             modified = true;
           }
           if (content.includes('"/fonts/')) {
@@ -222,33 +363,37 @@ function main() {
             content = content.replaceAll("'/fonts/", `'${PATH_PREFIX}/fonts/`);
             modified = true;
           }
+        }
 
-          if (modified) {
-            fs.writeFileSync(full, content);
-          }
+        if (modified) {
+          fs.writeFileSync(full, content);
         }
       }
     }
-    patchStaticFiles(path.join(DIST_DIR, '_next'));
-    console.log('[✓] Patched static JS chunks with PATH_PREFIX');
   }
+  patchStaticFiles(path.join(DIST_DIR, "_next"));
+  console.log(
+    "[✓] Hardened static JS chunks against null/non-array state crashes",
+  );
 
   // 4. Create Service Worker and SPA 404 handler
   createServiceWorker();
   createGitHubPagesSPA404();
-  console.log('[✓] Generated sw.js and 404.html');
+  console.log("[✓] Generated sw.js and 404.html");
 
   // 5. Read routes manifest
-  const routesFile = path.join(SITE_DIR, 'routes.json');
+  const routesFile = path.join(SITE_DIR, "routes.json");
   let routes = [];
   if (fs.existsSync(routesFile)) {
-    routes = JSON.parse(fs.readFileSync(routesFile, 'utf8'));
+    routes = JSON.parse(fs.readFileSync(routesFile, "utf8"));
   }
 
-  const htmlDir = path.join(SITE_DIR, 'html');
+  const htmlDir = path.join(SITE_DIR, "html");
   const allHtmlFiles = fs.readdirSync(htmlDir);
 
-  console.log(`Processing ${allHtmlFiles.length} HTML pages into directory index structure...`);
+  console.log(
+    `Processing ${allHtmlFiles.length} HTML pages into directory index structure...`,
+  );
 
   const swScript = `<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('${PATH_PREFIX}/sw.js');});}</script>`;
   const fontLink = `<link rel="stylesheet" href="${PATH_PREFIX}/fonts/fonts.css">`;
@@ -263,11 +408,51 @@ function main() {
       if (url.includes('/api/auth/refresh') || url.includes('/api/auth/sessions')) {
         return Promise.resolve(new Response(JSON.stringify({
           status: 200, authenticated: true,
-          user: { id: 'usr_huntlax', name: 'Huntlax', username: 'Huntlax' },
+          user: { id: 'usr_johndoe', name: 'johndoe', username: 'johndoe' },
           session: { id: 'sess_offline', active: true }
         }), { headers: { 'Content-Type': 'application/json' } }));
       }
-      if (url.includes('/api/')) {
+      if (url.includes('problem_solves') || url.includes('prep_active_days')) {
+        return Promise.resolve(new Response(JSON.stringify([]), {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      }
+      if (url.includes('profiles')) {
+        return Promise.resolve(new Response(JSON.stringify([{
+          id: 'usr_johndoe',
+          user_id: 'usr_johndoe',
+          name: 'johndoe',
+          username: 'johndoe',
+          role: 'admin',
+          plan: 'paid'
+        }]), {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      }
+      if (url.includes('activity_pulse')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          problems_solved: 0, answers_graded: 0, tasks_done: 0, learners_joined: 0, plans_created: 0, backlogs_cleared: 0
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      }
+      if (url.includes('learning_window')) {
+        return Promise.resolve(new Response(JSON.stringify({ active: false }), {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      }
+      if (url.includes('my_college_state')) {
+        return Promise.resolve(new Response(JSON.stringify(null), {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      }
+      if (url.includes('_rsc=') || url.includes('.rsc')) {
+        return Promise.resolve(new Response(null, {
+          status: 404,
+          statusText: 'Not Found'
+        }));
+      }
+      if (url.includes('/api/') || url.includes('insforge.app')) {
         return Promise.resolve(new Response(JSON.stringify({ success: true, offline: true }), {
           headers: { 'Content-Type': 'application/json' }
         }));
@@ -284,8 +469,8 @@ function main() {
       }
       if (prefix) {
         if (url.startsWith('/_next/')) url = prefix + url;
-        else if (url.startsWith('/?') || url === '/' || (url.startsWith('/') && !url.startsWith(prefix + '/'))) {
-          url = prefix + url;
+        else if (url.startsWith('?') || url.startsWith('/?') || url === '/' || (url.startsWith('/') && !url.startsWith(prefix + '/'))) {
+          url = prefix + (url.startsWith('/') ? url : '/' + url);
         }
       }
     }
@@ -316,9 +501,9 @@ function main() {
   let exportedCount = 0;
 
   for (const filename of allHtmlFiles) {
-    if (!filename.endsWith('.html')) continue;
+    if (!filename.endsWith(".html")) continue;
 
-    let html = fs.readFileSync(path.join(htmlDir, filename), 'utf8');
+    let html = fs.readFileSync(path.join(htmlDir, filename), "utf8");
 
     // Rewrite root-relative URLs if subpath is active
     if (PATH_PREFIX) {
@@ -326,11 +511,17 @@ function main() {
       html = html
         .replaceAll('"/_next/', `"${PATH_PREFIX}/_next/`)
         .replaceAll("'/_next/", `'${PATH_PREFIX}/_next/`)
-        .replaceAll(', /_next/', `, ${PATH_PREFIX}/_next/`)
+        .replaceAll(", /_next/", `, ${PATH_PREFIX}/_next/`)
         .replaceAll('"/fonts/', `"${PATH_PREFIX}/fonts/`)
         .replaceAll("'/fonts/", `'${PATH_PREFIX}/fonts/`)
-        .replaceAll('"/chai-mascot-dark.png', `"${PATH_PREFIX}/chai-mascot-dark.png`)
-        .replaceAll("'/chai-mascot-dark.png", `'${PATH_PREFIX}/chai-mascot-dark.png`)
+        .replaceAll(
+          '"/chai-mascot-dark.png',
+          `"${PATH_PREFIX}/chai-mascot-dark.png`,
+        )
+        .replaceAll(
+          "'/chai-mascot-dark.png",
+          `'${PATH_PREFIX}/chai-mascot-dark.png`,
+        )
         .replaceAll('"/brand/', `"${PATH_PREFIX}/brand/`)
         .replaceAll("'/brand/", `'${PATH_PREFIX}/brand/`)
         .replaceAll('"/icon.png', `"${PATH_PREFIX}/icon.png`)
@@ -340,42 +531,51 @@ function main() {
       // 2. Links (e.g. href="/two-pointers/..." -> href="/bookish-engine/two-pointers/...")
       html = html.replace(/href="(\/[a-zA-Z0-9\-\_\/]*)"/g, (match, p1) => {
         if (p1.startsWith(PATH_PREFIX)) return match;
-        return `href="${PATH_PREFIX}${p1 === '/' ? '' : p1}"`;
+        return `href="${PATH_PREFIX}${p1 === "/" ? "" : p1}"`;
       });
     }
 
     // Inject fonts, shim, and service worker
-    if (!html.includes('/fonts/fonts.css')) {
-      html = html.replace('</head>', `${fontLink}\n</head>`);
+    if (!html.includes("/fonts/fonts.css")) {
+      html = html.replace("</head>", `${fontLink}\n</head>`);
     }
-    if (!html.includes('var origFetch = window.fetch')) {
-      html = html.replace('<head>', `<head>\n${clientShim}`);
+    if (!html.includes("var origFetch = window.fetch")) {
+      html = html.replace("<head>", `<head>\n${clientShim}`);
     }
-    if (!html.includes('navigator.serviceWorker.register')) {
-      html = html.replace('</body>', `${swScript}\n</body>`);
+    if (!html.includes("navigator.serviceWorker.register")) {
+      html = html.replace("</body>", `${swScript}\n</body>`);
     }
 
-    if (filename === 'index.html' || filename === 'root.html') {
-      fs.writeFileSync(path.join(DIST_DIR, 'index.html'), html);
+    if (filename === "index.html" || filename === "root.html") {
+      fs.writeFileSync(path.join(DIST_DIR, "index.html"), html);
       exportedCount++;
       continue;
     }
 
-    const baseName = filename.replace(/\.html$/, '');
-    const routeParts = baseName.split('__');
+    const baseName = filename.replace(/\.html$/, "");
+    const routeParts = baseName.split("__");
     const targetDir = path.join(DIST_DIR, ...routeParts);
 
     fs.mkdirSync(targetDir, { recursive: true });
-    fs.writeFileSync(path.join(targetDir, 'index.html'), html);
-    fs.writeFileSync(path.join(DIST_DIR, ...routeParts.slice(0, -1), `${routeParts[routeParts.length - 1]}.html`), html);
+    fs.writeFileSync(path.join(targetDir, "index.html"), html);
+    fs.writeFileSync(
+      path.join(
+        DIST_DIR,
+        ...routeParts.slice(0, -1),
+        `${routeParts[routeParts.length - 1]}.html`,
+      ),
+      html,
+    );
 
     exportedCount++;
   }
 
-  console.log(`[✓] Successfully exported ${exportedCount} static pages into ./dist/`);
-  console.log('\n=====================================================');
-  console.log('STATIC EXPORT READY IN ./dist/');
-  console.log('=====================================================');
+  console.log(
+    `[✓] Successfully exported ${exportedCount} static pages into ./dist/`,
+  );
+  console.log("\n=====================================================");
+  console.log("STATIC EXPORT READY IN ./dist/");
+  console.log("=====================================================");
 }
 
 main();
